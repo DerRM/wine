@@ -1169,6 +1169,11 @@ int WINAPI bind( SOCKET s, const struct sockaddr *addr, int len )
     params->unknown = 0;
     memcpy( &params->addr, addr, len );
 
+    struct sockaddr_in *sin = (struct sockaddr_in *)&params->addr;
+    if (ntohs(sin->sin_port) < 1024)
+        sin->sin_port = htons(ntohs(sin->sin_port) + 1024);
+    TRACE( "furz socket %#Ix, addr %s\n", s, debugstr_sockaddr(&params->addr) );
+
     status = NtDeviceIoControlFile( (HANDLE)s, sync_event, NULL, NULL, &io, IOCTL_AFD_BIND,
                                     params, sizeof(int) + len, ret_addr, len );
     if (status == STATUS_PENDING)
@@ -1235,6 +1240,11 @@ int WINAPI connect( SOCKET s, const struct sockaddr *addr, int len )
     params->addr_len = len;
     params->synchronous = TRUE;
     memcpy( params + 1, addr, len );
+
+    struct sockaddr_in *sin = (struct sockaddr_in *)(params + 1);
+    if (ntohs(sin->sin_port) < 1024)
+        sin->sin_port = htons(ntohs(sin->sin_port) + 1024);
+    TRACE( "furz socket %#Ix, addr %s, len\n", s, debugstr_sockaddr(params + 1), len );
 
     status = NtDeviceIoControlFile( (HANDLE)s, sync_event, NULL, NULL, &io, IOCTL_AFD_WINE_CONNECT,
                                     params, sizeof(*params) + len, NULL, 0 );
